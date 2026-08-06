@@ -46,10 +46,12 @@ COPY railway-entrypoint.sh /usr/local/bin/railway-entrypoint.sh
 COPY railway_app_startup /usr/local/bin/railway_app_startup
 COPY railway_seed.php /usr/local/bin/railway_seed.php
 COPY railway_volumes.sh /etc/my_init.d/01_railway_volumes.sh
+COPY railway_fixups.sh /etc/my_init.d/09_railway_fixups.sh
 
 RUN chmod +x /usr/local/bin/railway-entrypoint.sh \
              /usr/local/bin/railway_app_startup \
              /etc/my_init.d/01_railway_volumes.sh \
+             /etc/my_init.d/09_railway_fixups.sh \
     # supervisord's `startup` program runs the stock app_startup; point it at
     # the wrapper that also seeds the administrator once the database is up.
     && sed -i 's/^command=app_startup$/command=railway_app_startup/' \

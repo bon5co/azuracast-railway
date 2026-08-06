@@ -1,20 +1,44 @@
 #!/usr/bin/env bash
 #
-# supervisord's `startup` program, replacing the stock `app_startup`. Runs the
-# stock script unchanged -- it is what waits for MariaDB and Redis, runs the
-# migrations and brings nginx up -- and then seeds the administrator, which has
-# to happen after the database exists and before anyone can reach the site.
+# supervisord's `startup` program, replacing the stock `app_startup`.
+#
+# Same sequence upstream runs, with one step inserted: the administrator is
+# seeded after the migrations and BEFORE nginx starts. Calling the stock script
+# and seeding afterwards is not equivalent -- nginx is already serving by then,
+# and /api/status goes healthy a moment before the account exists, which is
+# exactly the window this image is meant to close.
 set -u
 
-app_startup || exit 1
+if [ "$(whoami)" != 'azuracast' ]; then
+    exec gosu azuracast railway_app_startup
+fi
+
+uptime_wait redis || exit 1
+uptime_wait db || exit 1
+
+azuracast_cli azuracast:setup --init || exit 1
 
 cd /var/azuracast/www || exit 1
-
-if ! gosu azuracast php /usr/local/bin/railway_seed.php; then
-    echo "[railway] could not seed the administrator account; refusing to leave"
-    echo "[railway] an unclaimed instance serving traffic."
+if ! php /usr/local/bin/railway_seed.php; then
+    echo "[railway] could not seed the administrator account; refusing to serve a"
+    echo "[railway] claimable instance."
     supervisorctl shutdown
     exit 1
 fi
+
+# No domain is set on Railway (TLS is terminated at the edge), so this is
+# expected to fail; upstream ignores it too.
+azuracast_cli azuracast:acme:get-certificate || true
+
+supervisorctl start php-fpm
+supervisorctl start centrifugo
+
+# Give PHP-FPM a moment before nginx starts proxying to it.
+sleep 2
+
+supervisorctl start nginx
+uptime_wait nginx
+
+supervisorctl start all
 
 exit 0
