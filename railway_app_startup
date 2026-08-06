@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#
+# supervisord's `startup` program, replacing the stock `app_startup`. Runs the
+# stock script unchanged -- it is what waits for MariaDB and Redis, runs the
+# migrations and brings nginx up -- and then seeds the administrator, which has
+# to happen after the database exists and before anyone can reach the site.
+set -u
+
+app_startup || exit 1
+
+cd /var/azuracast/www || exit 1
+
+if ! gosu azuracast php /usr/local/bin/railway_seed.php; then
+    echo "[railway] could not seed the administrator account; refusing to leave"
+    echo "[railway] an unclaimed instance serving traffic."
+    supervisorctl shutdown
+    exit 1
+fi
+
+exit 0
