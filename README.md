@@ -1,5 +1,9 @@
 # azuracast-railway
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/azuracast-v0237-or-web-radio-whose-admin?referralCode=Z1xivh&utm_medium=integration&utm_source=template&utm_campaign=generic)
+
+**Deploy on Railway:** [AzuraCast template](https://railway.com/deploy/azuracast-v0237-or-web-radio-whose-admin?referralCode=Z1xivh&utm_medium=integration&utm_source=template&utm_campaign=generic)
+
 Railway-tuned [AzuraCast](https://www.azuracast.com/) image: the first Super
 Administrator account seeded during boot (upstream's setup wizard hands it to
 whoever reaches the URL first), all ten persistent paths relocated onto the one
